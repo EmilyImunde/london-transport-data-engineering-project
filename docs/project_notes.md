@@ -1,3 +1,5 @@
+PART 1 ETL PIPELINE
+
 1. ETL Pipeline Inspection
 After running "python src/run_etl.py" the following was reported: ETL completed successfully. Loaded 235 rows into transport_report_etl
 
@@ -146,3 +148,38 @@ The records where Key_id was missing. e.g. Zone_id or borough_id. This would mak
 7.	Highest Delay Routes= Identify problematic routes. Routes needing improvement
 8.	Zone-Based Travel Demand= Analyse Passenger distribution accros zones. To show which zones have the most transport usage
 
+
+
+PART 2 ELT PIPELINE
+1. WHICH RAW TABLES WERE CREATED
+You are now connected to database "london_eng_transport" as user "postgres".
+london_eng_transport=# \dt
+5 raw tables were created as shoen below
+                List of relations
+ Schema |         Name         | Type  |  Owner
+--------+----------------------+-------+----------
+ public | raw_boroughs         | table | postgres
+ public | raw_journeys         | table | postgres
+ public | raw_lines            | table | postgres
+ public | raw_stations         | table | postgres
+ public | raw_zones            | table | postgres
+
+
+
+2. WHAT KINDS OF BAD DATA WERE FILTERED OUT IN SQL
+Spaces were removed, names were standardised, lines with missing key identifiers were skipped
+
+
+HOW THE ELT DESIGN DIFFERS FROM ETL
+in the Databse, ETL presents only 1 table of clean tranformed data. In the ELT, tables with raw data are provided in the database
+
+
+WHAT THE FINAL TRANSPORT_REPORT_ELT TABLE REPRESENTS
+ 1.	Passenger Traffic Summary= Total passenger count across all journeys. To show overall transport demand
+2.	Passenger Distribution by Transport Mode= Shows which transport system is most used.
+3.	Busiest Stations= Identify stations with the highest passenger activity, Most crowded stations
+4.	Passenger Traffic by Borough= Shows which borough has the highest transport usage. Will show high-demand boroughs
+5.	Peak Time Travel Analysis= Identify when the system is busiest. Comparison between AM Peak vs PM Peak vs Midday demand
+6.	Delay Analysis= Measure system reliability. By showing which transport mode experiences the most delays
+7.	Highest Delay Routes= Identify problematic routes. Routes needing improvement
+8.	Zone-Based Travel Demand= Analyse Passenger distribution accros zones. To show which zones have the most transport usage
