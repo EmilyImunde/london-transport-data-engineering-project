@@ -1,5 +1,4 @@
-# Day 1 ELT Tasks
-
+# Day 1 ELT Tasks  - updated 
 ## London Transport Data Engineering Project
 
 Welcome to the **ELT part of Day 1**.
@@ -8,9 +7,9 @@ In this file, you will build the **local ELT version** of the London Transport D
 
 ELT means:
 
-* **Extract**
-* **Load**
-* **Transform**
+- **Extract**
+- **Load**
+- **Transform**
 
 That means your job in this part is to:
 
@@ -32,11 +31,11 @@ Your goal in this part is to build a working ELT pipeline that uses London trans
 
 By the end of this ELT task file, you should have:
 
-* loaded selected raw source files into PostgreSQL raw tables
-* preserved the raw data in its original form
-* transformed the data using SQL
-* created a final reporting table
-* validated the result with SQL queries
+- loaded selected raw source files into PostgreSQL raw tables
+- preserved the raw data in its original form
+- transformed the data using SQL
+- created a final reporting table
+- validated the result with SQL queries
 
 ---
 
@@ -44,11 +43,11 @@ By the end of this ELT task file, you should have:
 
 This project contains **10 raw source files**, but like the ETL version, the main Day 1 ELT reporting output will focus on the most important files for the first reporting layer:
 
-* `stations.csv`
-* `lines.csv`
-* `journeys.json`
-* `boroughs.csv`
-* `zones.csv`
+- `stations.csv`
+- `lines.csv`
+- `journeys.json`
+- `boroughs.csv`
+- `zones.csv`
 
 The other files still belong to the raw project environment and remain important for future extensions, validation, enrichment, and later project stages.
 
@@ -62,9 +61,9 @@ Not every file has to be used equally in the first reporting layer.
 
 For Day 1 ELT, the final PostgreSQL table will be:
 
-```text id="ub2l5y"
+```text
 transport_report_elt
-```
+````
 
 This table should help answer business questions such as:
 
@@ -82,13 +81,13 @@ This is the same business goal as ETL, but the architecture is different.
 
 Here is the flow you are building:
 
-```text id="3wd0q8"
+```text
 Raw source files → Python extraction → Load raw data into PostgreSQL → Transform inside PostgreSQL with SQL
 ```
 
 More specifically:
 
-```text id="gjyzt6"
+```text
 stations.csv
 lines.csv
 journeys.json
@@ -122,13 +121,13 @@ That is what makes this ELT.
 
 Open:
 
-```text id="15t5h1"
+```text
 sql/create_tables.sql
 ```
 
 and add these table definitions below your ETL table section:
 
-```sql id="r8ny8o"
+```sql
 CREATE TABLE IF NOT EXISTS raw_stations (
     station_id TEXT,
     station_name TEXT,
@@ -224,7 +223,7 @@ For Day 1 ELT, you should already have or keep these functions:
 
 If needed, your `src/extract.py` should already contain:
 
-```python id="y6x3n0"
+```python
 import csv
 import json
 import xml.etree.ElementTree as ET
@@ -288,13 +287,13 @@ The major difference is what happens **after extraction**.
 
 Open:
 
-```text id="wws4a8"
+```text
 src/load_postgres.py
 ```
 
 and make sure it contains this function:
 
-```python id="566c9z"
+```python
 import psycopg2
 
 
@@ -320,7 +319,7 @@ Replace `"your_password"` with your real PostgreSQL password.
 
 In `src/load_postgres.py`, add this function:
 
-```python id="n7ib08"
+```python
 def load_raw_stations(records):
     connection = get_connection()
     cursor = connection.cursor()
@@ -373,7 +372,7 @@ That is intentional.
 
 Still in `src/load_postgres.py`, add:
 
-```python id="rw57pu"
+```python
 def load_raw_lines(records):
     connection = get_connection()
     cursor = connection.cursor()
@@ -426,7 +425,7 @@ This preserves the original export values before transformation.
 
 Add:
 
-```python id="b8x17r"
+```python
 def load_raw_boroughs(records):
     connection = get_connection()
     cursor = connection.cursor()
@@ -471,7 +470,7 @@ def load_raw_boroughs(records):
 
 Add:
 
-```python id="kpm7x7"
+```python
 def load_raw_zones(records):
     connection = get_connection()
     cursor = connection.cursor()
@@ -516,7 +515,7 @@ def load_raw_zones(records):
 
 Add:
 
-```python id="gzdvba"
+```python
 def load_raw_journeys(records):
     connection = get_connection()
     cursor = connection.cursor()
@@ -573,7 +572,7 @@ The transformation step will decide what to keep.
 
 Still in `src/load_postgres.py`, add this helper:
 
-```python id="mkpat1"
+```python
 from pathlib import Path
 
 
@@ -611,13 +610,13 @@ That is a good professional habit.
 
 Open:
 
-```text id="uygel2"
+```text
 sql/elt_transform.sql
 ```
 
 and begin with this reset statement:
 
-```sql id="j6g9y9"
+```sql
 DELETE FROM transport_report_elt;
 ```
 
@@ -629,13 +628,60 @@ That prevents duplicate output from multiple runs.
 
 ---
 
-# 15. Step 11 - Write the main ELT transformation query
+# 15. Step 11 - Write the corrected main ELT transformation query
 
 ## Your task
 
-Now add the main SQL transformation logic into `sql/elt_transform.sql`:
+Now add the corrected ELT transformation logic below.
 
-```sql id="06vb8m"
+```sql
+DELETE FROM transport_report_elt;
+
+WITH dedup_stations AS (
+    SELECT DISTINCT ON (station_id)
+        station_id,
+        station_name,
+        borough_id,
+        zone_id,
+        line_id,
+        station_type
+    FROM raw_stations
+    WHERE station_id IS NOT NULL
+      AND TRIM(station_id) <> ''
+    ORDER BY station_id
+),
+dedup_lines AS (
+    SELECT DISTINCT ON (line_id)
+        line_id,
+        line_name,
+        transport_mode,
+        operator_id,
+        vehicle_type_id
+    FROM raw_lines
+    WHERE line_id IS NOT NULL
+      AND TRIM(line_id) <> ''
+    ORDER BY line_id
+),
+dedup_boroughs AS (
+    SELECT DISTINCT ON (borough_id)
+        borough_id,
+        borough_name,
+        region_group
+    FROM raw_boroughs
+    WHERE borough_id IS NOT NULL
+      AND TRIM(borough_id) <> ''
+    ORDER BY borough_id
+),
+dedup_zones AS (
+    SELECT DISTINCT ON (zone_id)
+        zone_id,
+        zone_name,
+        fare_group
+    FROM raw_zones
+    WHERE zone_id IS NOT NULL
+      AND TRIM(zone_id) <> ''
+    ORDER BY zone_id
+)
 INSERT INTO transport_report_elt (
     journey_id,
     journey_date,
@@ -656,28 +702,28 @@ INSERT INTO transport_report_elt (
 SELECT
     rj.journey_id,
     CAST(rj.journey_date AS DATE) AS journey_date,
-    rs.station_id,
-    INITCAP(TRIM(rs.station_name)) AS station_name,
-    rs.borough_id,
-    INITCAP(TRIM(rb.borough_name)) AS borough_name,
-    rs.zone_id,
-    INITCAP(TRIM(rz.zone_name)) AS zone_name,
-    rl.line_id,
-    INITCAP(TRIM(rl.line_name)) AS line_name,
-    INITCAP(TRIM(rl.transport_mode)) AS transport_mode,
+    ds.station_id,
+    INITCAP(TRIM(ds.station_name)) AS station_name,
+    ds.borough_id,
+    INITCAP(TRIM(db.borough_name)) AS borough_name,
+    ds.zone_id,
+    INITCAP(TRIM(dz.zone_name)) AS zone_name,
+    dl.line_id,
+    INITCAP(TRIM(dl.line_name)) AS line_name,
+    INITCAP(TRIM(dl.transport_mode)) AS transport_mode,
     CAST(rj.passenger_count AS INTEGER) AS passenger_count,
     CAST(rj.delay_minutes AS INTEGER) AS delay_minutes,
     INITCAP(TRIM(rj.time_band)) AS time_band,
     INITCAP(TRIM(rj.entry_exit_flag)) AS entry_exit_flag
 FROM raw_journeys rj
-JOIN raw_stations rs
-    ON rj.station_id = rs.station_id
-JOIN raw_lines rl
-    ON rj.line_id = rl.line_id
-LEFT JOIN raw_boroughs rb
-    ON rs.borough_id = rb.borough_id
-LEFT JOIN raw_zones rz
-    ON rs.zone_id = rz.zone_id
+JOIN dedup_stations ds
+    ON rj.station_id = ds.station_id
+JOIN dedup_lines dl
+    ON rj.line_id = dl.line_id
+LEFT JOIN dedup_boroughs db
+    ON ds.borough_id = db.borough_id
+LEFT JOIN dedup_zones dz
+    ON ds.zone_id = dz.zone_id
 WHERE rj.journey_id IS NOT NULL
   AND TRIM(rj.journey_id) <> ''
   AND rj.station_id IS NOT NULL
@@ -689,60 +735,49 @@ WHERE rj.journey_id IS NOT NULL
   AND rj.journey_date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$';
 ```
 
-## What this SQL does
-
-This query:
-
-* reads raw journey data
-* joins it to raw station data
-* joins it to raw line data
-* enriches it with borough and zone data
-* cleans text using `TRIM` and `INITCAP`
-* converts numbers and dates into the correct types
-* filters out invalid rows
-* inserts the final clean output into `transport_report_elt`
-
 ## Why this matters
 
-This is the heart of ELT.
+This version fixes the duplication issue in the ELT pipeline.
 
-In ETL, Python performed this transformation.
+The raw reference tables contain repeated records for the same business keys like:
 
-In ELT, PostgreSQL performs it with SQL after the raw data is already loaded.
+* `station_id`
+* `line_id`
+* `borough_id`
+* `zone_id`
 
-That is the key architectural difference.
+If you join directly to those raw tables, PostgreSQL can multiply rows and produce a final table that is much larger than expected.
+
+By creating deduplicated lookup layers first, the final join becomes correct and stable.
+
+> **Update note:** This step was corrected after duplicate-row behavior was observed by [@Alan](https://github.com/alan8burke) in `transport_report_elt`. The SQL now deduplicates reference tables before joining.
 
 ---
 
-# 16. Step 12 - Why the WHERE clause is important
+# 16. Step 12 - Why the deduplication step matters
 
 ## Your task
 
-Look carefully at this part of the SQL:
+Study these CTEs carefully:
 
-```sql id="iczqlx"
-WHERE rj.journey_id IS NOT NULL
-  AND TRIM(rj.journey_id) <> ''
-  AND rj.station_id IS NOT NULL
-  AND TRIM(rj.station_id) <> ''
-  AND rj.line_id IS NOT NULL
-  AND TRIM(rj.line_id) <> ''
-  AND rj.passenger_count ~ '^[0-9]+$'
-  AND rj.delay_minutes ~ '^[0-9]+$'
-  AND rj.journey_date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$';
+```sql
+WITH dedup_stations AS (...),
+dedup_lines AS (...),
+dedup_boroughs AS (...),
+dedup_zones AS (...)
 ```
 
 ## Why this matters
 
-Because the raw data may contain:
+These CTEs act like a temporary cleaned reference layer inside PostgreSQL.
 
-* empty IDs
-* invalid numeric values
-* date formatting problems
+They make sure that each business key appears only once before the final joins happen.
 
-In ELT, raw data is loaded first, so SQL must protect the transformation step from bad values.
+Without this step, the join can multiply rows and produce incorrect reporting output.
 
-That is a very realistic concern in real ELT workflows.
+So this is one of the most important parts of the corrected ELT design.
+
+> **Update note:** This explanation was added to clarify why the corrected SQL uses `DISTINCT ON` before joining.
 
 ---
 
@@ -752,21 +787,21 @@ That is a very realistic concern in real ELT workflows.
 
 Open:
 
-```text id="jsp0vd"
+```text
 sql/reporting_queries.sql
 ```
 
 and add these validation queries:
 
-```sql id="8r2z45"
+```sql
 SELECT COUNT(*) FROM transport_report_elt;
 ```
 
-```sql id="4q55yr"
+```sql
 SELECT * FROM transport_report_elt LIMIT 10;
 ```
 
-```sql id="g57hct"
+```sql
 SELECT station_name, SUM(passenger_count) AS total_passengers
 FROM transport_report_elt
 GROUP BY station_name
@@ -774,14 +809,14 @@ ORDER BY total_passengers DESC
 LIMIT 10;
 ```
 
-```sql id="ccllol"
+```sql
 SELECT line_name, AVG(delay_minutes) AS avg_delay
 FROM transport_report_elt
 GROUP BY line_name
 ORDER BY avg_delay DESC;
 ```
 
-```sql id="bm2f74"
+```sql
 SELECT borough_name, SUM(passenger_count) AS total_passengers
 FROM transport_report_elt
 GROUP BY borough_name
@@ -802,13 +837,13 @@ A pipeline is not complete until you confirm the output is usable.
 
 Open:
 
-```text id="w48g1s"
+```text
 src/run_elt.py
 ```
 
 and add this code:
 
-```python id="hmzeoc"
+```python
 from extract import (
     read_stations_csv,
     read_lines_csv,
@@ -866,7 +901,7 @@ That is exactly the ELT design.
 
 From the project root, run:
 
-```bash id="c2if4q"
+```bash
 python src/run_elt.py
 ```
 
@@ -874,7 +909,7 @@ python src/run_elt.py
 
 If everything works, you should see something like:
 
-```text id="rk9e1i"
+```text
 ELT completed successfully. Raw data loaded and SQL transformations applied.
 ```
 
@@ -898,23 +933,23 @@ Before checking the final report table, inspect the raw tables.
 
 Run these queries in PostgreSQL:
 
-```sql id="hk66vz"
+```sql
 SELECT * FROM raw_stations LIMIT 10;
 ```
 
-```sql id="1pswpd"
+```sql
 SELECT * FROM raw_lines LIMIT 10;
 ```
 
-```sql id="5586v3"
+```sql
 SELECT * FROM raw_boroughs LIMIT 10;
 ```
 
-```sql id="tmt40l"
+```sql
 SELECT * FROM raw_zones LIMIT 10;
 ```
 
-```sql id="fn368t"
+```sql
 SELECT * FROM raw_journeys LIMIT 10;
 ```
 
@@ -932,15 +967,15 @@ You should confirm that the raw source data was preserved correctly before trans
 
 Now inspect the final result:
 
-```sql id="8x5kts"
+```sql
 SELECT COUNT(*) FROM transport_report_elt;
 ```
 
-```sql id="79x2y0"
+```sql
 SELECT * FROM transport_report_elt LIMIT 10;
 ```
 
-```sql id="s98jqu"
+```sql
 SELECT station_name, SUM(passenger_count) AS total_passengers
 FROM transport_report_elt
 GROUP BY station_name
@@ -948,14 +983,14 @@ ORDER BY total_passengers DESC
 LIMIT 10;
 ```
 
-```sql id="g13mm6"
+```sql
 SELECT line_name, AVG(delay_minutes) AS avg_delay
 FROM transport_report_elt
 GROUP BY line_name
 ORDER BY avg_delay DESC;
 ```
 
-```sql id="2jhv1b"
+```sql
 SELECT borough_name, SUM(passenger_count) AS total_passengers
 FROM transport_report_elt
 GROUP BY borough_name
@@ -981,7 +1016,7 @@ You should make sure that:
 
 Open:
 
-```text id="85qhe2"
+```text
 docs/project_notes.md
 ```
 
@@ -1008,7 +1043,7 @@ After completing the ELT part, push your work.
 
 Example:
 
-```bash id="yy25xr"
+```bash
 git add .
 git commit -m "Complete Day 1 ELT pipeline"
 git push
